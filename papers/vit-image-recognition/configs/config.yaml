@@ -1,0 +1,65 @@
+# configs/config.yaml
+# CIFAR-10 기준 ViT 및 CNN baseline 하이퍼파라미터 설정
+
+# ─────────────────────────────────────────
+# 공통 학습 설정
+# ─────────────────────────────────────────
+training:
+  batch_size: 128
+  learning_rate: 3.0e-4
+  epochs: 50
+  optimizer: adamw          # adam | adamw | sgd
+  scheduler: cosine         # cosine | step | none
+  warmup_epochs: 5
+  weight_decay: 0.1
+  seed: 42
+
+# ─────────────────────────────────────────
+# 데이터셋 설정
+# ─────────────────────────────────────────
+dataset:
+  name: cifar10
+  num_classes: 10
+  image_size: 32
+  val_split: 0.1            # train 중 validation 비율
+  data_dir: ./data          # 데이터 다운로드 경로 (papers/vit-image-recognition 기준 상대 경로)
+  num_workers: 4
+
+# ─────────────────────────────────────────
+# ViT 하이퍼파라미터 (논문 Section 3.1 기준, CIFAR-10에 맞게 축소)
+# ─────────────────────────────────────────
+vit:
+  patch_size: 4             # CIFAR-10 32x32 → 8x8 = 64개 패치
+  num_layers: 6             # Transformer Encoder block 수 (L)
+  num_heads: 8              # Multi-head attention head 수
+  hidden_dim: 512           # Transformer hidden dimension (D)
+  mlp_dim: 1024             # MLP block 내부 확장 차원 (4×D 기준)
+  dropout: 0.1              # Attention / MLP dropout
+  emb_dropout: 0.1          # Patch embedding dropout
+  pool: cls                 # cls | mean  (분류 토큰 방식)
+
+# ─────────────────────────────────────────
+# CNN baseline 하이퍼파라미터
+# ─────────────────────────────────────────
+cnn:
+  num_conv_blocks: 3        # Conv Block 반복 수
+  base_channels: 32         # 첫 번째 Conv block output channel 수
+  channel_multiplier: 2     # 블록마다 채널 수 곱하는 배율 (32 → 64 → 128)
+  kernel_size: 3
+  pool_size: 2              # MaxPool kernel/stride
+  fc_hidden_dim: 256        # Fully Connected hidden layer 차원
+  dropout: 0.3
+
+# ─────────────────────────────────────────
+# 체크포인트 및 MLflow 설정
+# ─────────────────────────────────────────
+checkpoint:
+  dir: ./checkpoints        # 체크포인트 저장 경로 (상대 경로)
+  save_best_only: true
+  monitor: val_accuracy     # best model 기준 지표
+
+mlflow:
+  experiment_name: vit-vs-cnn-cifar10
+  tracking_uri: ./mlruns    # 로컬 MLflow tracking 경로 (상대 경로)
+  run_name_vit: vit_cifar10
+  run_name_cnn: cnn_baseline_cifar10
