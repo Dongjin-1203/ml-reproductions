@@ -27,9 +27,7 @@ from torch.optim import AdamW, Adam, SGD
 from torch.optim.lr_scheduler import CosineAnnealingLR, StepLR
 from torch.utils.data import DataLoader
 
-# 노트북에서 구현한 모델을 import (구현 완료 후 경로 수정)
-# from notebooks.model import ViT, CNNBaseline  # 대신 아래와 같이 사용 가능
-# 현재는 model.py가 없으므로 런타임에서 직접 import하도록 안내 주석 처리
+from model import SimpleCNN, ViT
 
 
 def load_config(config_path: str | Path) -> dict:
@@ -280,45 +278,24 @@ def main() -> None:
     train_loader, val_loader, _ = get_dataloaders(args.config)
 
     # 모델 초기화
-    # ─────────────────────────────────────────────────────────
-    # 아래 import는 notebooks/model.ipynb 구현 완료 후 적절한
-    # 모듈 경로로 수정하세요.
-    # 예시:
-    #   from models import ViT, CNNBaseline
-    # ─────────────────────────────────────────────────────────
     ds_cfg = cfg["dataset"]
     if args.model == "vit":
         vc = cfg["vit"]
-        # model = ViT(
-        #     image_size=ds_cfg["image_size"],
-        #     patch_size=vc["patch_size"],
-        #     num_classes=ds_cfg["num_classes"],
-        #     hidden_dim=vc["hidden_dim"],
-        #     num_layers=vc["num_layers"],
-        #     num_heads=vc["num_heads"],
-        #     mlp_dim=vc["mlp_dim"],
-        #     dropout=vc["dropout"],
-        #     emb_dropout=vc["emb_dropout"],
-        #     pool=vc["pool"],
-        # )
-        raise NotImplementedError(
-            "ViT 모델 구현 후 위 주석을 해제하고 import를 추가하세요."
+        # config의 hidden_dim이 ViT 클래스의 embed_dim에 대응
+        model: nn.Module = ViT(
+            img_size=ds_cfg["image_size"],
+            patch_size=vc["patch_size"],
+            in_channels=3,
+            num_classes=ds_cfg["num_classes"],
+            embed_dim=vc["hidden_dim"],
+            num_heads=vc["num_heads"],
+            num_layers=vc["num_layers"],
+            mlp_dim=vc["mlp_dim"],
+            dropout=vc["dropout"],
         )
     else:
-        cc = cfg["cnn"]
-        # model = CNNBaseline(
-        #     num_classes=ds_cfg["num_classes"],
-        #     num_conv_blocks=cc["num_conv_blocks"],
-        #     base_channels=cc["base_channels"],
-        #     channel_multiplier=cc["channel_multiplier"],
-        #     kernel_size=cc["kernel_size"],
-        #     pool_size=cc["pool_size"],
-        #     fc_hidden_dim=cc["fc_hidden_dim"],
-        #     dropout=cc["dropout"],
-        # )
-        raise NotImplementedError(
-            "CNNBaseline 모델 구현 후 위 주석을 해제하고 import를 추가하세요."
-        )
+        # SimpleCNN은 고정 아키텍처 (4-block), num_classes만 외부 주입
+        model = SimpleCNN(num_classes=ds_cfg["num_classes"])
 
     train(model, train_loader, val_loader, cfg, args.model, device)
 
